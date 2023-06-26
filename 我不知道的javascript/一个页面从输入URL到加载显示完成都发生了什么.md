@@ -231,10 +231,131 @@ gzip一般出现在请求头或者响应头中，例如：
 
 ### http2.0
 
+- http1.1每请求一个资源都需要开启一个tcp/ip连接，但是tcp/ip本身有并发数限制，所以资源多了速度会慢
+- http2.0中，一个tcp/ip请求可以请求多个资源
+- 所以类似于雪碧图、静态资源多域名拆分这样针对http1.1的优化方案就无需用到了
 
+- ?怎么判断是不是http2.0？
 
+http具备以下特性
+- 多路复用（即一个tcp/ip连接可以请求多个资源）
+- 首部压缩（http头部压缩，减少体积）
+- 二进制分帧（在应用层跟传送层之间增加了一个二进制分帧层，改进传输性能，实现低延迟和高吞吐量）
+- 服务器端推送（服务端可以对客户端的一个请求发出多个响应，可以主动通知客户端）
+- 请求优先级（如果流被赋予了优先级，它就会基于这个优先级来处理，由服务器决定需要多少资源来处理该请求。）
 
+### https
 
+https就是安全版本的http，譬如一些支付等操作基本都是基于https的，因为http请求的安全系数太低了。
+
+简单来看，https与http的区别就是： 在请求前，会建立ssl链接，确保接下来的通信都是加密的，无法被轻易截取分析
+
+## 解析页面
+
+@see [重排（reflow）与重绘（repaint）](https://www.bilibili.com/read/cv17332629/ )
+
+@see [浏览器的渲染过程](https://github.com/includeios/document/issues/6)
+
+浏览器拿到内容后，渲染大致上有
+- 解析html，构建DOM树
+- 解析CSS，构建CSS规则树
+- 合并DOM数和CSS规则，生成render树
+- 布局render树（Layout/reflow），负责各元素尺寸、位置的计算
+- 绘制render树（paint），绘制页面像素信息
+- 浏览器将各层信息发送给GPU，GPU会将各层合成（composite），显示在屏幕上
+
+![测试](./images/浏览器处理.png)
+
+### layout与repaint
+
+- Layout，也称为Reflow，即回流。一般意味着元素的内容、结构、位置或尺寸发生了变化，需要重新计算样式和渲染树
+- Repaint，即重绘。意味着元素发生的改变只是影响了元素的一些外观之类的时候（例如，背景色，边框颜色，文字颜色等），此时只需要应用新样式绘制这个元素就可以了
+
+可能触发reflow的属性有（元素的尺寸、位置）：
+
+- 盒子模型相关属性会触发重排
+  - width
+  - height
+  - padding
+  - margin
+  - .....
+- 定位属性及浮动也会触发重排
+  - position
+  - float
+  - clear
+  - .....
+- 改变节点内部文字结构也会触发重排
+  - text-align
+  - overflow-y
+  - font-weight
+
+可能触发repaint的属性有（元素的颜色、背景、边框等，但是几何尺寸没有变）：
+- color
+- border-style
+- background
+- box-shadow
+- ……
+
+回流一定会导致重绘的发生，而且一个节点的回流可能导致子节点或兄弟节点的回流，所以需要尽量避免回流(重绘也需要尽量避免)。
+
+### RenderObject 与 RenderLayer
+
+- Render 树上的每一个节点被称为：RenderObject
+  -  RenderObject几乎与DOM一一对应
+  - html、script等节点会忽略
+  - display: none的元素会忽略
+  - Render 树是衔接浏览器排版引擎和渲染引擎之间的桥梁，它是排版引擎的输出，渲染引擎的输入。
+
+- 浏览器渲染引擎并不是直接使用Render树进行绘制，为了方便处理Positioning,Clipping,Overflow-scroll,CSS Transfrom/Opacrity/Animation/Filter,Mask or Reflection,Z-indexing等属性，浏览器需要生成另外一棵树：Layer树
+
+- 浏览器会为一些特定的RenderObject生成对应的RenderLayer
+    - 是否根节点
+    - 是否透明
+    - 是否溢出
+    - 是否css滤镜
+    - ……
+- 当满足上面其中一个条件时，这个RrenderObject就会被浏览器选中生成对应的RenderLayer。其它的节点会从属与父节点的RenderLayer。最终，每个RrenderObject都会直接或者间接的属于一个RenderLayer。
+- Layer 树决定了网页绘制的层次顺序，而从属于RenderLayer 的 RrenderObject决定了这个 Layer 的内容，所有的 RenderLayer 和 RrenderObject 一起就决定了网页在屏幕上最终呈现出来的内容。
+
+### Compsite
+- Chrome拥有两套不同的渲染路径：硬件加速路径和旧软件路径。
+- 硬件加速路径会将一些图层的合成交给GPU处理，比CPU处理更快，而我们的RenderLayout（有些地方又称作PaintLayers）并不能作为GPU的输入，这里会将RenderLayout再转换成GraphicsLayers
+- 浏览器也是根据“某些规则”，选中一些特殊的RenderLayout节点，这些节点将被称为Compositing Layers，Compositing Layers与其他的普通节点不一样的是他们拥有自己的GraphicsLayer，而那些没有被选中的节点，会和父层公用一个GraphicsLayer。
+    - 3D 或透视变换(perspective transform) CSS 属性
+    - 使用加速视频解码的 元素 拥有 3D
+    - (WebGL) 上下文或加速的 2D 上下文的 元素
+    - 对自己的 opacity 做 CSS动画或使用一个动画变换的元素
+    - ……
+
+### 外链资源下载
+
+- 图片不会阻塞DOM加载，也不会阻塞页面渲染，但图片会延迟onload事件的触发
+    - 视频、字体和图片其实是一样的，也不会阻塞 DOM 的加载和渲染。(存疑，真的是这样吗)
+- CSS 不会阻塞 DOM 的解析，但是会阻塞DOM的渲染
+    - CSS 阻塞 DOM 的渲染只阻塞定义在 CSS 后面的 DOM
+- CSS 会阻塞定义在其之后 JS 的执行
+- JS 会阻塞定义在其之后的 DOM 的加载
+    - defer
+        - 对于 defer 的 script，浏览器会继续解析 html，且同时并行下载脚本，等 DOM 构建完成后，才会开始执行脚本，所以它不会造成阻塞
+        - defer 脚本下载完成后，执行时间一定是 DOMContentLoaded 事件触发之前执行
+        - 多个 defer 的脚本执行顺序严格按照定义顺序进行，而不是先下载好的先执行
+    - async
+        - 对于 async 的 script，浏览器会继续解析 html，且同时并行下载脚本，一旦脚本下载完成会立刻执行
+        - async 脚本的执行 和 DOMContentLoaded 的触发顺序无法明确谁先谁后，因为脚本可能在 DOM 构建完成时还没下载完，也可能早就下载好了
+        - 多个 async，按照谁先下载完成谁先执行的原则进行，所以当它们之间有顺序依赖的时候特别容易出错。
+- 动态插入的脚本不会阻塞页面解析
+    - 动态插入的脚本在加载完成后会立即执行，这和 async 一致
+    - 如果需要保证多个插入的动态脚本的执行顺序，则可以设置 script.async = false，此时动态脚本的执行顺序将按照插入顺序执行和 defer 一样。
+
+### DOMContentLoaded 和 onload
+- onload：当页面所有资源（包括 CSS、JS、图片、字体、视频等）都加载完成才触发，而且它是绑定到 window 对象上
+    - 动态脚本阻塞onload吗？？
+- DOMContentLoaded：当 HTML 已经完成解析，并且构建出了 DOM，但此时外部资源比如样式和脚本可能还没加载完成，并且该事件需要绑定到 document 对象上
+    - 对于 async 脚本和动态脚本(加载 & 执行)不会阻塞 DOMContentLoaded 触发
+    - 如果 script 标签中包含 defer，那么这一块脚本将不会影响 HTML 文档的解析，而是等到 HTML 解析完成后才会执行。而 DOMContentLoaded 只有在 defer 脚本执行结束后才会被触发。 
+    - 等 DOM 构建完成之后 defer 脚本执行，但脚本执行之前需要等待 CSSOM 构建完成。在 DOM、CSSOM 构建完毕，defer 脚本执行完成之后，DOMContentLoaded 事件触发。
+    - 外链的css不会阻塞 DOMContentLoaded 触发
+        - 当外部样式后面有脚本（async 脚本和动态脚本除外）的时候，外部样式就会阻塞 DOMContentLoaded 的触发。
 
 # 参考文档
 
