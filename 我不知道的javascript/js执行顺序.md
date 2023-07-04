@@ -26,8 +26,18 @@
     - [在Promises/A+规范的Notes 3.1](https://promisesaplus.com/#notes)中提及了promise的then方法可以采用“宏任务（macro-task）”机制或者“微任务（micro-task）”机制来实现。
     - `.then`传入的回调是异步的，`new Promise`传入的回调是同步执行的
 
+## Event loop处理过程
 
-## Event Loop处理过程
+一个event loop只要存在，就会不断执行下边的步骤：
+- 在tasks队列中选择最老的一个task,用户代理可以选择任何task队列，如果没有可选的任务，则跳到下边的microtasks步骤。
+- 将上边选择的task设置为正在运行的task。
+- Run: 运行被选择的task。
+- 将event loop的currently running task变为null。
+- 从task队列里移除前边运行的task。
+- Microtasks: 执行microtasks任务检查点。（也就是执行microtasks队列里的任务）
+- 更新渲染（Update the rendering）...
+- 如果这是一个worker event loop，但是没有任务在task队列中，并且WorkerGlobalScope对象的closing标识为true，则销毁event loop，中止这些步骤，然后进行定义在Web workers章节的run a worker。
+- 返回到第一步。
 
 ```js
 setTimeout(() => console.log('setTimeout'));
@@ -45,27 +55,23 @@ Promise queued by Promise
 setTimeout
 ```
 
-## 渲染时机
-- UI 渲染和交互的处理是通shi过 Task Queue 来调度的，因此耗时任务会导致渲染和交互任务得不到调用，也就是页面“卡死”
+## Event loop中的渲染时机
+- UI 渲染和交互的处理是通过 Task Queue 来调度的，因此耗时任务会导致渲染和交互任务得不到调用，也就是页面“卡死”
 - 单个的耗时任务和 Microtask Queue 都会阻塞页面交互，Task 则不影响
   - 因为 Task 之间浏览器有机会会插入 UI 任务
+- 不是每一轮event loop都会更新视图
+  - 这取决于是否修改了dom和浏览器觉得是否有必要在此时立即将新状态呈现给用户
+  - 浏览器会尽量保持每秒60帧的刷新频率（大约16.7ms每帧）
+  - 如果希望在每轮event loop都即时呈现变动，可以使用requestAnimationFrame。
 
-## Event loop处理过程
-
-一个event loop只要存在，就会不断执行下边的步骤：
-- 在tasks队列中选择最老的一个task,用户代理可以选择任何task队列，如果没有可选的任务，则跳到下边的microtasks步骤。
-- 将上边选择的task设置为正在运行的task。
-- Run: 运行被选择的task。
-- 将event loop的currently running task变为null。
-- 从task队列里移除前边运行的task。
-- Microtasks: 执行microtasks任务检查点。（也就是执行microtasks队列里的任务）
-- 更新渲染（Update the rendering）...
-- 如果这是一个worker event loop，但是没有任务在task队列中，并且WorkerGlobalScope对象的closing标识为true，则销毁event loop，中止这些步骤，然后进行定义在Web workers章节的run a worker。
-- 返回到第一步。
-
-## 事件循环机制与线程
+## 事件循环机制与各个线程的关系
 
 ![图 1](../images/c5eb7ee21c66b25e1df50cf2e5ba3a9402203d3781cf795bbe9afe13c99918b8.png)  
+
+- 同步任务都在 js 引擎线程上完成，当前的任务都存储在执行栈中
+- js 引擎线程执行到 setTimeout/setInterval 的时候，通知定时器触发线程开始计时，等待计时结束后，将回调事件放入到由事件触发线程所管理的任务队列中
+- js 引擎线程执行到 XHR/fetch 时，通知异步http请求线程，发送一个网络请求； 异步http请求线程在请求成功后，将回调事件放入到由事件触发线程所管理的任务队列中
+- 如果 JS 引擎线程中的执行栈没有任务了，JS 引擎线程会询问事件触发线程，在 任务队列中是否有待执行的回调函数，如果有就会推入到执行栈中交给 JS 引擎线程执行
 
 
 
