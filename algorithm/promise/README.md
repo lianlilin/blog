@@ -79,3 +79,8 @@ promise解决过程是一个抽象的操作，其需输入一个promise和一个
   - 以x为参数执行promise
 
 ## 其它方法
+
+## 参考资料
+
+- [Promise 原理解析与源码实现（遵循 Promise/A+ 规范）](https://github.com/silinchen/promise#promise-%E5%8E%9F%E7%90%86%E8%A7%A3%E6%9E%90%E4%B8%8E%E6%BA%90%E7%A0%81%E5%AE%9E%E7%8E%B0%E9%81%B5%E5%BE%AA-promisea-%E8%A7%84%E8%8C%83)
+- [Promise.prototype.then()](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Promise/then)
