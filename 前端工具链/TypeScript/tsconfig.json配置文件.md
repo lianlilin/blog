@@ -22,3 +22,8 @@
 - module: 指定生成哪个模块系统的代码
   - "None"， "CommonJS"， "AMD"， "System"， "UMD"， "ES6"或 "ES2015"。
 - target：指定ECMAScript目标版本 "ES3"（默认）， "ES5"， "ES6"/ "ES2015"， "ES2016"， "ES2017"或 "ESNext"。
+- esModuleInterop：
+  - 在接入ts时候，`import Koa from 'koa';`遇到异常 `Module can only be default-imported using esModuleInterop flag”`，原因是koa是基于cjs规范的，所以直接import会报错，两种方式：
+    - 配置esModuleInterop
+    - import * as Koa from 'koa'
+  - [esModuleInterop 到底做了什么？](https://zhuanlan.zhihu.com/p/148081795)
