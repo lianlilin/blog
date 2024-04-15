@@ -6,6 +6,8 @@ JavaScript 的类型系统非常弱，而且没有使用限制，运算符可以
 
 TypeScript 引入了一个更强大、更严格的类型系统，属于静态类型语言。
 
+TypeScript 的作用，就是为 JavaScript 引入这种静态类型特征。
+
 ## 静态类型的优点
 
 - 有利于代码的静态分析
@@ -15,6 +17,13 @@ TypeScript 引入了一个更强大、更严格的类型系统，属于静态类
 - 更好的IDE支持，做到语法提示和自动补全
 - 代码文档
 - 有助于代码重构
+
+## 静态类型的缺点
+- 丧失动态类型的灵活性
+- 增加工作量
+- 更高的学习成本
+- 需要编译才能运行
+- 已有的js代码兼容问题
 
 # 基本用法
 
@@ -46,6 +55,7 @@ console.log(x) // 报错
 - TypeScript 的类型检查只是编译时的类型检查，而不是运行时的类型检查
 - TypeScript 官方提供的编译器叫做 tsc，可以将 TypeScript 脚本编译成 JavaScript 脚本
   - tsc可以指定输出文件、输出目录、js版本、有编译产物时是否继续变异等
+- TypeScript 允许将tsc的编译参数，写在配置文件tsconfig.json
 
 ## 直接运行ts代码
 
@@ -72,6 +82,7 @@ console.log(x) // 报错
 - unknown类型的变量，不能直接赋值给其他类型的变量（除了any类型和unknown类型）。
 - 不能直接调用unknown类型变量的方法和属性。
 - unknown可以看作是更安全的any。一般来说，凡是需要设为any类型的地方，通常都应该优先考虑设为unknown类型。
+- 在集合论上，unknown也可以视为所有其他类型（除了any）的全集，所以它和any一样，也属于 TypeScript 的顶层类型。
 
 ## never 类型
 
@@ -130,6 +141,9 @@ const s4:string = new String('hello'); // 报错
 - 小写的object类型代表 JavaScript 里面的狭义对象，即可以用字面量表示的对象，只包含对象、数组和函数，不包括原始类型的值。
 
 - 大写的Object类型代表 JavaScript 语言里面的广义对象。所有可以转成对象的值，都是Object类型，这囊括了几乎所有的值。
+- 除了undefined和null这两个值不能转为对象，其他任何值都可以赋值给Object类型。
+- 空对象{}是Object类型的简写形式
+- 无论是大写的Object类型，还是小写的object类型，都只包含 JavaScript 内置对象原生的属性和方法，用户自定义的属性和方法都不存在于这两个类型之中
 
 ## undefined与null类型
 
@@ -143,50 +157,71 @@ const s4:string = new String('hello'); // 报错
 
 ## 联合类型
 
-联合类型A|B表示，任何一个类型只要属于A或B，就属于联合类型A|B。
-
-“类型缩小”是 TypeScript 处理联合类型的标准方法，凡是遇到可能为多种类型的场合，都需要先缩小类型，再进行处理。
+- 联合类型A|B表示，任何一个类型只要属于A或B，就属于联合类型A|B。
+- “类型缩小”是 TypeScript 处理联合类型的标准方法，凡是遇到可能为多种类型的场合，都需要先缩小类型，再进行处理。
 
 ## 交叉类型
 
-交叉类型（intersection types）指的多个类型组成的一个新类型，使用符号&表示。
+- 交叉类型（intersection types）指的多个类型组成的一个新类型，使用符号&表示。
+- 交叉类型的主要用途是表示对象的合成。
+```js
+type A = { foo: number };
 
-交叉类型的主要用途是表示对象的合成。
+type B = A & { bar: number };
+```
 
 ## type命令
 
 type命令用来定义一个类型的别名。
 
-别名可以让类型的名字变得更有意义，也能增加代码的可读性，还可以使复杂类型用起来更方便，便于以后修改变量的类型。
+- 别名可以让类型的名字变得更有意义，也能增加代码的可读性，还可以使复杂类型用起来更方便，便于以后修改变量的类型。
+- 别名支持使用表达式，也可以在定义一个别名时，使用另一个别名，即别名允许嵌套。
+
+```js
+type World = "world";
+type Greeting = `hello ${World}`;
+```
 
 ## typeof运算符
 
-JavaScript 语言中，typeof 运算符是一个一元运算符，返回一个字符串，代表操作数的类型。
+- JavaScript 语言中，typeof 运算符是一个一元运算符，返回一个字符串，代表操作数的类型。
 
-TypeScript 将typeof运算符移植到了类型运算，它的操作数依然是一个值，但是返回的不是字符串，而是该值的 TypeScript 类型。
+- TypeScript 将typeof运算符移植到了类型运算，它的操作数依然是一个值，但是返回的不是字符串，而是该值的 TypeScript 类型。
+
+```ts
+let a = 1;
+let b:typeof a;
+
+if (typeof a === 'number') {
+  b = a;
+}
+```
+- TS里的typeof 的参数只能是标识符
+  - 不能是需要运算的表达式。
+  - typeof命令的参数不能是类型。
 
 ## 类型兼容
 
-TypeScript 的类型存在兼容关系，某些类型可以兼容其他类型。
+- TypeScript 的类型存在兼容关系，某些类型可以兼容其他类型。
 
-TypeScript 的一个规则是，凡是可以使用父类型的地方，都可以使用子类型，但是反过来不行。
+- TypeScript 的一个规则是，凡是可以使用父类型的地方，都可以使用子类型，但是反过来不行。
 
 # TypeScript 的数组类型
 
 TypeScript 数组有一个根本特征：所有成员的类型必须相同，但是成员数量是不确定的，可以是无限数量的成员，也可以是零成员。
 
-第一种写法是在数组成员的类型后面，加上一对方括号。
+- 第一种写法是在数组成员的类型后面，加上一对方括号。
 
 ```ts
 let arr:(number|string)[];
 ```
-数组类型的第二种写法是使用 TypeScript 内置的 Array 接口。
+- 数组类型的第二种写法是使用 TypeScript 内置的 Array 接口。
 
 ```ts
 let arr:Array<number> = [1, 2, 3];
 ```
 
-TypeScript 允许使用方括号读取数组成员的类型。
+- TypeScript 允许使用方括号读取数组成员的类型。
 
 ```ts
 type Names = string[];
@@ -197,13 +232,13 @@ type Name = Names[number]; // string
 
 ## 数组类型推断
 
-如果变量的初始值是空数组，那么 TypeScript 会推断数组类型是any[]。
+- 如果变量的初始值是空数组，那么 TypeScript 会推断数组类型是any[]。
 
-随着新成员的加入，TypeScript 会自动修改推断的数组类型。
+- 随着新成员的加入，TypeScript 会自动修改推断的数组类型。
 
 ## 只读数组
 
-TypeScript 允许声明只读数组，方法是在数组类型前面加上readonly关键字。
+- TypeScript 允许声明只读数组，方法是在数组类型前面加上readonly关键字。
 
 ```ts
 const arr:readonly number[] = [0, 1];
@@ -213,9 +248,9 @@ arr.push(3); // 报错
 delete arr[0]; // 报错
 ```
 
-readonly关键字不能与数组的泛型写法一起使用。
+- readonly关键字不能与数组的泛型写法一起使用。
 
-TypeScript 提供了两个专门的泛型，用来生成只读数组的类型。只读数组还有一种声明方法，就是使用“const 断言”。
+- TypeScript 提供了两个专门的泛型，用来生成只读数组的类型。只读数组还有一种声明方法，就是使用“const 断言”。
 
 ```ts
 const a1:ReadonlyArray<number> = [0, 1];
@@ -229,20 +264,26 @@ arr[0] = [2]; // 报错
 
 ## 多维数组
 
-TypeScript 使用T[][]的形式，表示二维数组，T是最底层数组成员的类型。
+- TypeScript 使用T[][]的形式，表示二维数组，T是最底层数组成员的类型。
+
+```js
+var multi:number[][] = [[1,2,3], [23,24,25]];
+```
 
 # 元组
 
-元组（tuple）是 TypeScript 特有的数据类型，它表示成员类型可以自由设置的数组，即数组的各个成员的类型可以不同。
+- 元组（tuple）是 TypeScript 特有的数据类型，它表示成员类型可以自由设置的数组，即数组的各个成员的类型可以不同。
 
-由于成员的类型可以不一样，所以元组必须明确声明每个成员的类型。
+- 由于成员的类型可以不一样，所以元组必须明确声明每个成员的类型。
 
 ```ts
 const s:[string, string, boolean]
   = ['a', 'b', true];
 ```
 
-元组类型的写法，与上一章的数组有一个重大差异。数组的成员类型写在方括号外面（number[]），元组的成员类型是写在方括号里面（[number]）。TypeScript 的区分方法就是，成员类型写在方括号里面的就是元组，写在外面的就是数组。
+- 元组类型的写法，与上一章的数组有一个重大差异。
+  - 数组的成员类型写在方括号外面（number[]）
+  - 元组的成员类型是写在方括号里面（[number]）
 
 使用扩展运算符（...），可以表示不限成员数量的元组。
 
@@ -253,6 +294,18 @@ type t3 = [...boolean[], string, number];
 
 // 如果不确定元组成员的类型和数量，可以写成下面这样。
 type Tuple = [...any[]];
+```
+
+- 元组的成员可以添加成员名，这个成员名是说明性的，可以任意取名，没有实际作用。
+
+```ts
+type Color = [
+  red: number,
+  green: number,
+  blue: number
+];
+
+const c:Color = [255, 255, 255];
 ```
 
 ## 只读元祖
@@ -266,13 +319,13 @@ type t = Readonly<[number, string]>
 
 ## 成员数量推断
 
-如果没有可选成员和扩展运算符，TypeScript 会推断出元组的成员数量（即元组长度）。
+- 如果没有可选成员和扩展运算符，TypeScript 会推断出元组的成员数量（即元组长度）。
 
 ## 扩展运算符与成员数量
 
-扩展运算符（...）将数组（注意，不是元组）转换成一个逗号分隔的序列，这时 TypeScript 会认为这个序列的成员数量是不确定的，因为数组的成员数量是不确定的。
+- 扩展运算符（...）将数组（注意，不是元组）转换成一个逗号分隔的序列，这时 TypeScript 会认为这个序列的成员数量是不确定的，因为数组的成员数量是不确定的。
 
-这导致如果函数调用时，使用扩展运算符传入函数参数，可能发生参数数量与数组长度不匹配的报错。
+- 这导致如果函数调用时，使用扩展运算符传入函数参数，可能发生参数数量与数组长度不匹配的报错。
 
 ```ts
 const arr = [1, 2];
@@ -298,9 +351,9 @@ const arr = [1, 2] as const;
 
 # symbol类型
 
-symbol类型包含所有的 Symbol 值，但是无法表示某一个具体的 Symbol 值。
+- symbol类型包含所有的 Symbol 值，但是无法表示某一个具体的 Symbol 值。
 
-为了解决这个问题，TypeScript 设计了symbol的一个子类型unique symbol，它表示单个的、某个具体的 Symbol 值。
+- 为了解决这个问题，TypeScript 设计了symbol的一个子类型unique symbol，它表示单个的、某个具体的 Symbol 值。
 
 ```ts
 // 正确
@@ -312,7 +365,9 @@ let y:unique symbol = Symbol();
 
 # 函数类型
 
-函数的类型声明，需要在声明函数时，给出参数的类型和返回值的类型。
+## 简介
+
+- 函数的类型声明，需要在声明函数时，给出参数的类型和返回值的类型。
 
 ```ts
 function hello(
@@ -322,7 +377,7 @@ function hello(
 }
 ```
 
-如果变量被赋值为函数
+- 如果变量被赋值为函数
 
 ```ts
 // 写法一，通过函数类型推断hello类型
@@ -331,18 +386,26 @@ const hello = function (txt:string) {
 }
 
 // 写法二，用箭头函数的形式指定hello的类型
-const hello:
-  (txt:string) => void
-= function (txt) {
+// 类型里的参数名是必须的，并且需要括号，但是参数名可以不一致
+const hello: (txt:string) => void = function (txt) {
   console.log('hello ' + txt);
 };
 ```
 
-函数的实际参数个数，可以少于类型指定的参数个数，但是不能多于，即 TypeScript 允许省略参数。
+- 如果函数类型的定义很冗长，或者多个函数使用同一种类型，可以用`type`为函数类型指定一个别名
 
-函数类型还可以采用对象的写法
-- 常规的代码规范里并不推荐这种写法。
-- 非常合适用在一个场合：函数本身存在属性。
+- 函数的实际参数个数，可以少于类型指定的参数个数，但是不能多于，即 TypeScript 允许省略参数。
+```ts
+let myFunc: (a:number, b:number) => number;
+
+myFunc = (a:number) => a; // 正确
+
+myFunc = (a:number, b:number, c:number) => a + b + c; // 报错
+```
+
+- 函数类型还可以采用对象的写法
+  - 常规的代码规范里并不推荐这种写法。
+  - 非常合适用在一个场合：函数本身存在属性。
 
 ```ts
 let add:{
@@ -352,17 +415,29 @@ let add:{
 add = function (x, y) {
   return x + y;
 };
+// 函数本身存在属性，适用于对象格式的写法
+function f(x:number) {
+  console.log(x);
+}
+f.version = '1.0';
+
+let foo: {
+  (x:number): void;
+  version: string
+} = f;
 ```
 
 ## Function类型
 
-TypeScript 提供 Function 类型表示函数，任何函数都属于这个类型。
+- TypeScript 提供 Function 类型表示函数，任何函数都属于这个类型。
 
 ```ts
 function doSomething(f:Function) {
   return f(1, 2, 3);
 }
 ```
+- Function 类型的函数可以接受任意数量的参数，每个参数的类型都是any，返回值的类型也是any，代表没有任何约束
+  - 不建议使用，给出函数详细的类型声明会更好一些
 
 ## 箭头函数
 
@@ -371,8 +446,20 @@ const repeat = (
   str:string,
   times:number
 ):string => str.repeat(times);
+```
+
+- 类型写在箭头函数的定义里面，与使用箭头函数表示函数类型，写法有所不同
+
+```ts
+function greet(
+  fn:(a:string) => void
+):void {
+  fn('world');
+}
 
 
+// map()方法的参数是一个箭头函数(name):Person => ({name})，该箭头函数的参数name的类型省略了，因为可以从map()的类型定义推断出来，
+// 箭头函数的返回值类型为Person。相应地，变量people的类型是Person[]。
 type Person = { name: string };
 
 const people = ['alice', 'bob', 'jan'].map(
@@ -380,11 +467,14 @@ const people = ['alice', 'bob', 'jan'].map(
 );
 ```
 
+
+
 ## 可选参数
 
-如果函数的某个参数可以省略，则在参数名后面加问号表示。函数的可选参数只能在参数列表的尾部，跟在必选参数的后面。
+- 如果函数的某个参数可以省略，则在参数名后面加问号表示。
+  - 函数的可选参数只能在参数列表的尾部，跟在必选参数的后面。
 
-如果前置的参数有可能是undefined，需要显示的指定类型可能为undefined。
+- 如果前置的参数有可能是undefined，需要显示的指定类型可能为undefined。
 
 ```ts
 let myFunc:
@@ -397,10 +487,27 @@ myFunc = function (x, y) {
   return x + y;
 }
 ```
+- 参数名带有问号，表示该参数的类型实际上是`原始类型|undefined`，它有可能为`undefined`
+- 类型显式设为`undefined`的参数，就不能省略
+  - 前部参数有可能为空，得使用这个方法
+```ts
+function f(x?:number) {
+  return x;
+}
+
+f() // 正确
+f(undefined) // 正确
+
+function f(x:number|undefined) {
+  return x;
+}
+
+f() // 报错
+```
 
 ## 参数默认值
 
-TypeScript 函数的参数默认值写法，与 JavaScript 一致。
+- TypeScript 函数的参数默认值写法，与 JavaScript 一致。
 - 可选参数与默认值不能同时使用。
 
 ```ts
@@ -417,28 +524,155 @@ add(undefined, 1) // 正确
 
 ## 参数解构
 
-有点乱，用到了再说
+```ts
+function f(
+  [x, y]: [number, number]
+) {
+  // ...
+}
+
+function sum(
+  { a, b, c }: {
+     a: number;
+     b: number;
+     c: number
+  }
+) {
+  console.log(a + b + c);
+}
+```
+## rest参数
+- rest 参数表示函数剩余的所有参数，它可以是数组（剩余参数类型相同），也可能是元组（剩余参数类型不同）。
+```ts
+// rest 参数为数组
+function joinNumbers(...nums:number[]) {
+  // ...
+}
+
+// rest 参数为元组
+function f(...args:[boolean, number]) {
+  // ...
+}
+```
+
+有时候感觉rest参数没啥必要？
 
 ## readonly 只读参数
 
-如果函数内部不能修改某个参数，可以在函数定义时，在参数类型前面加上readonly关键字，表示这是只读参数。
+- 如果函数内部不能修改某个参数，可以在函数定义时，在参数类型前面加上readonly关键字，表示这是只读参数。
+- readonly关键字目前只允许用在数组和元组类型的参数前面，如果用在其他类型的参数前面，就会报错。
+
+```ts
+function arraySum(
+  arr:readonly number[]
+) {
+  // ...
+  arr[0] = 0; // 报错
+}
+```
 
 ## void类型
 
-如果变量、对象方法、函数参数是一个返回值为 void 类型的函数，那么并不代表不能赋值为有返回值的函数。恰恰相反，该变量、对象方法和函数参数可以接受返回任意值的函数，这时并不会报错。
+- void 类型表示函数没有返回值。
+  - 函数的运行结果如果是抛出错误，也允许将返回值写成void。
+  
+```ts
+function f():void {
+  return 123; // 报错
+}
+```
+- void 类型允许返回undefined或null。
+  - 打开了strictNullChecks编译选项，那么 void 类型只允许返回undefined
+```ts
+function f():void {
+  return undefined; // 正确
+}
 
-## never类型
+function f():void {
+  return null; // 正确
+}
+```
 
-never类型表示肯定不会出现的值。它用在函数的返回值，就表示某个函数肯定不会返回值，即函数不会正常执行结束。
-
-- 抛出异常
-- 死循环
-
-## 函数重载
+- 如果变量、对象方法、函数参数是一个返回值为 void 类型的函数，该变量、对象方法和函数参数可以接受返回任意值的函数，这时并不会报错。
+  - 函数字面量如果声明了返回值是 void 类型，还是不能有返回值。
 
 ```ts
+type voidFunc = () => void;
+
+const f:voidFunc = () => {
+  return 123;
+};
+
+// 现实意义在于有时候函数返回值被忽略
+const src = [1, 2, 3];
+const ret = [];
+
+src.forEach(el => ret.push(el));
+
+// 但是返回值用到了，那么就报错了
+type voidFunc = () => void;
+ 
+const f:voidFunc = () => {
+  return 123;
+};
+
+f() * 2 // 报错
+```
+
+
+## never类型
+- never是 TypeScript 的唯一一个底层类型，所有其他类型都包括了never
+- never类型表示肯定不会出现的值。它用在函数的返回值，就表示某个函数肯定不会返回值，即函数不会正常执行结束。
+  - 抛出异常
+  - 死循环
+- 一个函数如果某些条件下有正常返回值，另一些条件下抛出错误，这时它的返回值类型可以省略never。
+```ts
+// 抛出异常
+function fail(msg:string):never {
+  throw new Error(msg);
+}
+// 死循环
+const sing = function():never {
+  while (true) {
+    console.log('sing');
+  }
+};
+
+// 显示返回Error对象，返回值不能是never
+function fail():Error {
+    return new Error("Something failed");
+}
+
+// 某些条件下有正常返回值，另一些条件下抛出错误，可以省略
+function sometimesThrow():number {
+  if (Math.random() > 0.5) {
+    return 100;
+  }
+
+  throw new Error('Something went wrong');
+}
+
+const result = sometimesThrow();
+```
+
+## 局部类型
+- 函数内部允许声明其他类型，该类型只在函数内部有效，成为局部类型。
+
+## 高阶函数
+```ts
+(someValue: number) => (multiplier: number) => someValue * multiplier;
+```
+
+## 函数重载
+- 有些函数可以接受不同类型或不同个数的参数，并且根据参数的不同，会有不同的函数行为。这种根据参数类型不同，执行不同逻辑的行为，称为函数重载（function overload）。
+- TypeScript 对于“函数重载”的类型声明方法是，逐一定义每一种情况的类型。
+
+```ts
+// 列举了各种情况
 function reverse(str:string):string;
 function reverse(arr:any[]):any[];
+// 函数本身的类型声明必须和前面已有的重载声明兼容
+// 这里不能有任何其它代码，否则报错
 function reverse(
   stringOrArray:string|any[]
 ):string|any[] {
@@ -448,16 +682,76 @@ function reverse(
     return stringOrArray.slice().reverse();
 }
 ```
-- 重载的各个类型描述与函数的具体实现之间，不能有其他代码，否则报错。
-- 函数重载的每个类型声明之间，以及类型声明与函数实现的类型之间，不能有冲突。
+- TypeScript 是按照顺序进行检查的，一旦发现符合某个类型声明，就不再往下检查了，所以类型最宽的声明应该放在最后面，防止覆盖其他类型声明。
+```ts
+function f(x:any):number;
+function f(x:string): 0|1;
+function f(x:any):any {
+  // ...
+}
+
+const a:0|1 = f('hi'); // 报错，匹配不到第二行
+```
+- 对象的方法也可以使用重载。
+```ts
+class StringBuilder {
+  #data = '';
+
+  add(num:number): this;
+  add(bool:boolean): this;
+  add(str:string): this;
+  add(value:any): this {
+    this.#data += String(value);
+    return this;
+  }
+
+  toString() {
+    return this.#data;
+  }
+}
+```
 - 函数重载也可以用来精确描述函数参数与返回值之间的对应关系。
-- 一般使用联合参数，除非参数和返回值之间有较强的对应关系
+```ts
+function createElement(
+  tag:'a'
+):HTMLAnchorElement;
+function createElement(
+  tag:'canvas'
+):HTMLCanvasElement;
+function createElement(
+  tag:'table'
+):HTMLTableElement;
+function createElement(
+  tag:string
+):HTMLElement {
+  // ...
+}
+```
+- 一般使用联合参数，除非参数和返回值之间有较强的对应关系，因为重载是比较复杂的
 
 ## 构造函数
 
-构造函数的类型写法，就是在参数列表前面加上new命令。
+- 构造函数的类型写法，就是在参数列表前面加上new命令。
+```ts
+class Animal {
+  numLegs:number = 4;
+}
 
-有点麻烦没太看懂
+type AnimalConstructor = new () => Animal;
+
+function create(c:AnimalConstructor):Animal {
+  return new c();
+}
+// 类的本质就是构造函数
+const a = create(Animal);
+```
+- 某些函数既是构造函数，又可以当作普通函数使用
+```ts
+type F = {
+  new (s:string): object;
+  (n?:number): number;
+}
+```
 
 # 对象类型
 
@@ -469,6 +763,58 @@ type User = {
   age: number
 };
 type Name = User['name']; // string
+```
+## 可选属性
+- 读取可选属性之前，必须检查一下是否为undefined
+```ts
+const obj: {
+  x: number;
+  y?: number;
+} = { x: 1 };
+
+const user:{
+  firstName: string;
+  lastName?: string;
+} = { firstName: 'Foo'};
+
+if (user.lastName !== undefined) {
+  console.log(`hello ${user.firstName} ${user.lastName}`)
+}
+
+// 写法一
+let firstName = (user.firstName === undefined)
+  ? 'Foo' : user.firstName;
+let lastName = (user.lastName === undefined)
+  ? 'Bar' : user.lastName;
+
+// 写法二
+// ?? 是非空运算符，null/undefined，对于0、false等返回还是true
+let firstName = user.firstName ?? 'Foo';
+let lastName = user.lastName ?? 'Bar';
+```
+
+## 只读属性
+- 属性名前面加上readonly关键字，表示这个属性是只读属性，不能修改。
+```ts
+interface MyInterface {
+  readonly prop: number;
+}
+```
+- 如果希望属性值是只读的，除了声明时加上readonly关键字，还有一种方法，就是在赋值时，在对象后面加上只读断言as const。
+```ts
+const myUser = {
+  name: "Sabrina",
+} as const;
+
+myUser.name = "Cynthia"; // 报错
+```
+- as const属于 TypeScript 的类型推断，如果变量明确地声明了类型，那么 TypeScript 会以声明的类型为准。
+```ts
+const myUser:{ name: string } = {
+  name: "Sabrina",
+} as const;
+
+myUser.name = "Cynthia"; // 正确
 ```
 
 ## 属性名的索引类型
